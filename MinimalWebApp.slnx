@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MinimalWebApp.Application/MinimalWebApp.Application.csproj" />
+    <Project Path="src/MinimalWebApp.Domain/MinimalWebApp.Domain.csproj" />
+    <Project Path="src/MinimalWebApp.Infrastructure/MinimalWebApp.Infrastructure.csproj" />
+    <Project Path="src/MinimalWebApp.Web/MinimalWebApp.Web.csproj" />
+  </Folder>
+</Solution>

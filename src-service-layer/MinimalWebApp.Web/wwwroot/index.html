@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Products</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      max-width: 60rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5;
+    }
+    h1 { margin-bottom: 0.25rem; }
+    .muted { opacity: 0.65; font-size: 0.9rem; }
+    form {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+      gap: 0.75rem; align-items: end; margin: 1.5rem 0;
+      padding: 1rem; border: 1px solid currentColor; border-radius: 0.5rem;
+    }
+    label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; }
+    input { padding: 0.45rem; font: inherit; border: 1px solid; border-radius: 0.25rem; background: transparent; color: inherit; }
+    .actions { display: flex; gap: 0.5rem; }
+    button { padding: 0.45rem 0.9rem; font: inherit; cursor: pointer; border-radius: 0.25rem; border: 1px solid currentColor; background: transparent; color: inherit; }
+    button[type="submit"] { font-weight: 600; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid; }
+    th { font-size: 0.8rem; text-transform: uppercase; opacity: 0.7; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.row-actions { white-space: nowrap; }
+    #status { min-height: 1.5rem; font-size: 0.9rem; }
+    #status.error { color: #c0392b; }
+  </style>
+</head>
+<body>
+  <h1>Products</h1>
+  <p class="muted">Minimal CRUD UI over <code>/api/products</code></p>
+
+  <form id="product-form" autocomplete="off">
+    <input type="hidden" id="id" />
+    <label>SKU<input id="sku" maxlength="32" required /></label>
+    <label>Name<input id="name" maxlength="200" required /></label>
+    <label>Description<input id="description" maxlength="2000" /></label>
+    <label>Price<input id="price" type="number" step="0.01" min="0" value="0" required /></label>
+    <div class="actions">
+      <button type="submit" id="submit-btn">Add</button>
+      <button type="button" id="cancel-btn" hidden>Cancel</button>
+    </div>
+  </form>
+
+  <p id="status"></p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th><th>Name</th><th>Description</th><th class="num">Price</th><th>Updated</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API = '/api/products';
+    const form = document.getElementById('product-form');
+    const rows = document.getElementById('rows');
+    const status = document.getElementById('status');
+    const submitBtn = document.getElementById('submit-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const fields = ['id', 'sku', 'name', 'description', 'price'].reduce(
+      (acc, key) => ({ ...acc, [key]: document.getElementById(key) }), {});
+
+    const say = (message, isError = false) => {
+      status.textContent = message;
+      status.className = isError ? 'error' : '';
+    };
+
+    const money = value => Number(value).toFixed(2);
+    const when = value => value ? new Date(value).toLocaleString() : '—';
+
+    async function send(method, url, body) {
+      const response = await fetch(url, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined
+      });
+
+      if (response.ok) {
+        return response.status === 204 ? null : response.json();
+      }
+
+      const text = await response.text();
+      let detail = text;
+      try {
+        const problem = JSON.parse(text);
+        detail = typeof problem === 'string'
+          ? problem
+          : problem.errors
+            ? Object.values(problem.errors).flat().join(' ')
+            : problem.detail || problem.title || text;
+      } catch { /* plain-text body */ }
+
+      throw new Error(detail || `Request failed (${response.status})`);
+    }
+
+    async function load() {
+      try {
+        const products = await send('GET', API);
+        rows.replaceChildren(...products.map(toRow));
+        if (!products.length) say('No products yet.');
+      } catch (error) {
+        say(error.message, true);
+      }
+    }
+
+    function toRow(product) {
+      const tr = document.createElement('tr');
+      const cells = [
+        [product.sku], [product.name], [product.description ?? '—'],
+        [money(product.price), 'num'], [when(product.updatedAtUtc ?? product.createdAtUtc)]
+      ];
+
+      for (const [text, className] of cells) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        if (className) td.className = className;
+        tr.append(td);
+      }
+
+      const actions = document.createElement('td');
+      actions.className = 'row-actions';
+
+      const edit = document.createElement('button');
+      edit.textContent = 'Edit';
+      edit.onclick = () => startEdit(product);
+
+      const remove = document.createElement('button');
+      remove.textContent = 'Delete';
+      remove.onclick = () => destroy(product);
+
+      actions.append(edit, ' ', remove);
+      tr.append(actions);
+      return tr;
+    }
+
+    function startEdit(product) {
+      fields.id.value = product.id;
+      fields.sku.value = product.sku;
+      fields.name.value = product.name;
+      fields.description.value = product.description ?? '';
+      fields.price.value = product.price;
+      submitBtn.textContent = 'Save';
+      cancelBtn.hidden = false;
+      say(`Editing ${product.sku}`);
+      fields.sku.focus();
+    }
+
+    function resetForm() {
+      form.reset();
+      fields.id.value = '';
+      submitBtn.textContent = 'Add';
+      cancelBtn.hidden = true;
+      say('');
+    }
+
+    async function destroy(product) {
+      try {
+        await send('DELETE', `${API}/${product.id}`);
+        if (fields.id.value === product.id) resetForm();
+        say(`Deleted ${product.sku}`);
+        await load();
+      } catch (error) {
+        say(error.message, true);
+      }
+    }
+
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const id = fields.id.value;
+      const payload = {
+        sku: fields.sku.value,
+        name: fields.name.value,
+        description: fields.description.value || null,
+        price: Number(fields.price.value)
+      };
+
+      try {
+        await send(id ? 'PUT' : 'POST', id ? `${API}/${id}` : API, payload);
+        const sku = payload.sku.toUpperCase();
+        resetForm();
+        say(id ? `Saved ${sku}` : `Added ${sku}`);
+        await load();
+      } catch (error) {
+        say(error.message, true);
+      }
+    };
+
+    cancelBtn.onclick = resetForm;
+    load();
+  </script>
+</body>
+</html>

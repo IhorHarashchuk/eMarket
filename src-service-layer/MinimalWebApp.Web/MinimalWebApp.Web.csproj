@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Composition root: HTTP endpoints, DI wiring, static UI. -->
+
+  <PropertyGroup>
+    <RootNamespace>MinimalWebApp.Web</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MinimalWebApp.Application\MinimalWebApp.Application.csproj" />
+    <ProjectReference Include="..\MinimalWebApp.Infrastructure\MinimalWebApp.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

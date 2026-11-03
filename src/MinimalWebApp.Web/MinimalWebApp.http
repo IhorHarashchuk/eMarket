@@ -1,0 +1,34 @@
+@MinimalWebApp_HostAddress = http://localhost:5214
+
+### List all products
+GET {{MinimalWebApp_HostAddress}}/api/products
+Accept: application/json
+
+### Get one product
+GET {{MinimalWebApp_HostAddress}}/api/products/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Create a product
+POST {{MinimalWebApp_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "DEMO-1",
+  "name": "Demo product",
+  "description": "Created from the .http file",
+  "price": 19.99
+}
+
+### Update a product
+PUT {{MinimalWebApp_HostAddress}}/api/products/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "sku": "DEMO-1",
+  "name": "Demo product (renamed)",
+  "description": null,
+  "price": 24.5
+}
+
+### Delete a product
+DELETE {{MinimalWebApp_HostAddress}}/api/products/00000000-0000-0000-0000-000000000000

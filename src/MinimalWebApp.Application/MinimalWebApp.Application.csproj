@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Use cases and the abstractions the outer layers must satisfy. -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MinimalWebApp.Domain\MinimalWebApp.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
